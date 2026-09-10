@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Audiencias Mailchimp</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para los gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Análisis de Audiencias Mailchimp</h1>
+            <p class="text-gray-600 mt-2">Visión general y solapamiento de contactos (Septiembre 2026)</p>
+        </header>
+
+        <!-- Resumen Global -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-indigo-500">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contactos Únicos Totales</h3>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-4xl font-bold text-gray-900">9,393</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Universo real sin duplicados</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-blue-500">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Audiencia Principal</h3>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-4xl font-bold text-gray-900">7,194</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Newsletter Gratuitos</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-teal-500">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total de Listas</h3>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-4xl font-bold text-gray-900">6</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Segmentos analizados</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Gráfico de Barras -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <h2 class="text-lg font-bold text-gray-900 mb-4">Tamaño por Audiencia</h2>
+                <div class="relative h-64 w-full">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Lista rápida -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <h2 class="text-lg font-bold text-gray-900 mb-4">Ranking de Volumen</h2>
+                <ul class="space-y-4">
+                    <li class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">1. Newsletter Gratuitos</span>
+                        <span class="font-bold text-indigo-600">7,194</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">2. HispanicTV</span>
+                        <span class="font-bold text-indigo-600">3,703</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">3. FIAP</span>
+                        <span class="font-bold text-indigo-600">1,279</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">4. Diario</span>
+                        <span class="font-bold text-indigo-600">1,083</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">5. Sostenible</span>
+                        <span class="font-bold text-indigo-600">535</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">6. FIAP Prensa</span>
+                        <span class="font-bold text-indigo-600">174</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Herramienta de Solapamiento Interactivo -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Explorador de Solapamientos</h2>
+            <p class="text-gray-600 mb-6 text-sm">Selecciona una audiencia para ver cuántos contactos comparte con el resto de tus listas.</p>
+            
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- Selector -->
+                <div class="w-full md:w-1/3">
+                    <label for="audienceSelect" class="block text-sm font-medium text-gray-700 mb-2">Selecciona una Audiencia Base:</label>
+                    <select id="audienceSelect" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                        <option value="Newsletter Gratuitos">Newsletter Gratuitos (7,194)</option>
+                        <option value="HispanicTV">HispanicTV (3,703)</option>
+                        <option value="FIAP">FIAP (1,279)</option>
+                        <option value="Diario">Diario (1,083)</option>
+                        <option value="Sostenible">Sostenible (535)</option>
+                        <option value="FIAP Prensa">FIAP Prensa (174)</option>
+                    </select>
+
+                    <div class="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <h4 class="text-indigo-900 font-bold mb-1" id="selectedTitle">Newsletter Gratuitos</h4>
+                        <p class="text-indigo-700 text-sm">Tiene un total de <span id="selectedTotal" class="font-bold">7,194</span> contactos.</p>
+                    </div>
+                </div>
+
+                <!-- Resultados del solapamiento -->
+                <div class="w-full md:w-2/3">
+                    <h3 class="text-md font-semibold text-gray-800 mb-4 border-b pb-2">Contactos compartidos con:</h3>
+                    <div id="overlapResults" class="space-y-3">
+                        <!-- Los resultados se inyectarán aquí vía JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Datos crudos obtenidos del análisis
+        const audienceData = {
+            "Newsletter Gratuitos": { total: 7194, overlaps: { "HispanicTV": 2954, "Diario": 760, "Sostenible": 300, "FIAP": 200, "FIAP Prensa": 16 } },
+            "HispanicTV": { total: 3703, overlaps: { "Newsletter Gratuitos": 2954, "Diario": 957, "Sostenible": 332, "FIAP": 107, "FIAP Prensa": 11 } },
+            "FIAP": { total: 1279, overlaps: { "Newsletter Gratuitos": 200, "HispanicTV": 107, "Diario": 26, "FIAP Prensa": 13, "Sostenible": 11 } },
+            "Diario": { total: 1083, overlaps: { "HispanicTV": 957, "Newsletter Gratuitos": 760, "FIAP": 26, "Sostenible": 22, "FIAP Prensa": 3 } },
+            "Sostenible": { total: 535, overlaps: { "HispanicTV": 332, "Newsletter Gratuitos": 300, "Diario": 22, "FIAP": 11, "FIAP Prensa": 1 } },
+            "FIAP Prensa": { total: 174, overlaps: { "Newsletter Gratuitos": 16, "FIAP": 13, "HispanicTV": 11, "Diario": 3, "Sostenible": 1 } }
+        };
+
+        // Formateador de números (para poner comas)
+        const formatNumber = (num) => new Intl.NumberFormat('en-US').format(num);
+
+        // Configuración del gráfico de barras
+        const ctx = document.getElementById('barChart').getContext('2d');
+        const labels = Object.keys(audienceData);
+        const data = labels.map(key => audienceData[key].total);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total de Contactos',
+                    data: data,
+                    backgroundColor: [
+                        'rgba(49, 46, 129, 0.8)', // Newsletter
+                        'rgba(88, 28, 135, 0.8)', // HispanicTV
+                        'rgba(134, 25, 143, 0.8)', // FIAP
+                        'rgba(190, 24, 93, 0.8)', // Diario
+                        'rgba(225, 29, 72, 0.8)', // Sostenible
+                        'rgba(244, 63, 94, 0.8)'  // FIAP Prensa
+                    ],
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                }
+            }
+        });
+
+        // Lógica del selector de audiencias
+        const selectEl = document.getElementById('audienceSelect');
+        const resultsEl = document.getElementById('overlapResults');
+        const titleEl = document.getElementById('selectedTitle');
+        const totalEl = document.getElementById('selectedTotal');
+
+        function updateOverlapView(selectedAudience) {
+            const data = audienceData[selectedAudience];
+            const overlaps = data.overlaps;
+            
+            // Actualizar resumen lateral
+            titleEl.textContent = selectedAudience;
+            totalEl.textContent = formatNumber(data.total);
+
+            // Limpiar resultados anteriores
+            resultsEl.innerHTML = '';
+
+            // Ordenar los solapamientos de mayor a menor para mejor lectura
+            const sortedOverlaps = Object.entries(overlaps).sort((a, b) => b[1] - a[1]);
+
+            sortedOverlaps.forEach(([otherAudience, count]) => {
+                // Calcular porcentaje respecto al total de la audiencia seleccionada
+                const percentage = ((count / data.total) * 100).toFixed(1);
+                
+                const itemHtml = `
+                    <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                ${otherAudience.charAt(0)}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">${otherAudience}</p>
+                                <p class="text-xs text-gray-500">Representa el ${percentage}% de ${selectedAudience}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800">
+                                ${formatNumber(count)} contactos
+                            </span>
+                        </div>
+                    </div>
+                `;
+                resultsEl.innerHTML += itemHtml;
+            });
+        }
+
+        // Event listener para cuando cambia el select
+        selectEl.addEventListener('change', (e) => {
+            updateOverlapView(e.target.value);
+        });
+
+        // Cargar vista inicial
+        updateOverlapView('Newsletter Gratuitos');
+
+    </script>
+</body>
+</html>
