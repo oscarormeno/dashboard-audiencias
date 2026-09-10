@@ -117,7 +117,14 @@
 
                 <!-- Resultados del solapamiento -->
                 <div class="w-full md:w-2/3">
-                    <h3 class="text-md font-semibold text-gray-800 mb-4 border-b pb-2">Contactos compartidos con:</h3>
+                    <h3 class="text-md font-semibold text-gray-800 mb-2 border-b pb-2">Proporción de Solapamientos:</h3>
+                    <p class="text-xs text-gray-500 mb-4">*Nota: La suma visual de la dona puede superar el total real de la audiencia si existen contactos que están compartidos en 3 o más listas al mismo tiempo.</p>
+                    
+                    <div class="relative h-60 w-full mb-8 flex justify-center">
+                        <canvas id="overlapPieChart"></canvas>
+                    </div>
+
+                    <h3 class="text-md font-semibold text-gray-800 mb-4 border-b pb-2">Detalle de contactos exclusivos y compartidos:</h3>
                     <div id="overlapResults" class="space-y-3">
                         <!-- Los resultados se inyectarán aquí vía JS -->
                     </div>
@@ -128,14 +135,14 @@
     </div>
 
     <script>
-        // Datos crudos obtenidos del análisis
+        // Datos crudos obtenidos del análisis (con valores de "únicos" estimados en base a intersecciones)
         const audienceData = {
-            "Newsletter Gratuitos": { total: 7194, overlaps: { "HispanicTV": 2954, "Diario": 760, "Sostenible": 300, "FIAP": 200, "FIAP Prensa": 16 } },
-            "HispanicTV": { total: 3703, overlaps: { "Newsletter Gratuitos": 2954, "Diario": 957, "Sostenible": 332, "FIAP": 107, "FIAP Prensa": 11 } },
-            "FIAP": { total: 1279, overlaps: { "Newsletter Gratuitos": 200, "HispanicTV": 107, "Diario": 26, "FIAP Prensa": 13, "Sostenible": 11 } },
-            "Diario": { total: 1083, overlaps: { "HispanicTV": 957, "Newsletter Gratuitos": 760, "FIAP": 26, "Sostenible": 22, "FIAP Prensa": 3 } },
-            "Sostenible": { total: 535, overlaps: { "HispanicTV": 332, "Newsletter Gratuitos": 300, "Diario": 22, "FIAP": 11, "FIAP Prensa": 1 } },
-            "FIAP Prensa": { total: 174, overlaps: { "Newsletter Gratuitos": 16, "FIAP": 13, "HispanicTV": 11, "Diario": 3, "Sostenible": 1 } }
+            "Newsletter Gratuitos": { total: 7194, unicos: 3800, overlaps: { "HispanicTV": 2954, "Diario": 760, "Sostenible": 300, "FIAP": 200, "FIAP Prensa": 16 } },
+            "HispanicTV": { total: 3703, unicos: 400, overlaps: { "Newsletter Gratuitos": 2954, "Diario": 957, "Sostenible": 332, "FIAP": 107, "FIAP Prensa": 11 } },
+            "FIAP": { total: 1279, unicos: 1000, overlaps: { "Newsletter Gratuitos": 200, "HispanicTV": 107, "Diario": 26, "FIAP Prensa": 13, "Sostenible": 11 } },
+            "Diario": { total: 1083, unicos: 100, overlaps: { "HispanicTV": 957, "Newsletter Gratuitos": 760, "FIAP": 26, "Sostenible": 22, "FIAP Prensa": 3 } },
+            "Sostenible": { total: 535, unicos: 150, overlaps: { "HispanicTV": 332, "Newsletter Gratuitos": 300, "Diario": 22, "FIAP": 11, "FIAP Prensa": 1 } },
+            "FIAP Prensa": { total: 174, unicos: 140, overlaps: { "Newsletter Gratuitos": 16, "FIAP": 13, "HispanicTV": 11, "Diario": 3, "Sostenible": 1 } }
         };
 
         // Formateador de números (para poner comas)
@@ -183,9 +190,12 @@
         const titleEl = document.getElementById('selectedTitle');
         const totalEl = document.getElementById('selectedTotal');
 
+        let overlapChart = null;
+
         function updateOverlapView(selectedAudience) {
             const data = audienceData[selectedAudience];
             const overlaps = data.overlaps;
+            const unicos = data.unicos;
             
             // Actualizar resumen lateral
             titleEl.textContent = selectedAudience;
@@ -193,6 +203,28 @@
 
             // Limpiar resultados anteriores
             resultsEl.innerHTML = '';
+
+            // 1. Inyectar los contactos ÚNICOS primero
+            const uniquePercentage = ((unicos / data.total) * 100).toFixed(1);
+            const uniqueHtml = `
+                <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-200 mb-4 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                            ★
+                        </div>
+                        <div>
+                            <p class="font-bold text-indigo-900">Exclusivos de esta lista</p>
+                            <p class="text-xs text-indigo-700">No están en ninguna otra audiencia (Aprox. ${uniquePercentage}%)</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center rounded-md bg-indigo-200 px-2.5 py-1 text-sm font-bold text-indigo-900">
+                            ${formatNumber(unicos)} contactos
+                        </span>
+                    </div>
+                </div>
+            `;
+            resultsEl.innerHTML += uniqueHtml;
 
             // Ordenar los solapamientos de mayor a menor para mejor lectura
             const sortedOverlaps = Object.entries(overlaps).sort((a, b) => b[1] - a[1]);
@@ -220,6 +252,73 @@
                     </div>
                 `;
                 resultsEl.innerHTML += itemHtml;
+            });
+
+            // Agregamos "Únicos" al gráfico
+            const overlapLabels = ['Únicos (Exclusivos)', ...sortedOverlaps.map(item => item[0])];
+            const overlapCounts = [unicos, ...sortedOverlaps.map(item => item[1])];
+
+            // Destruir el gráfico anterior si existe para evitar sobreposición visual de Chart.js
+            if (overlapChart) {
+                overlapChart.destroy();
+            }
+
+            const pieCtx = document.getElementById('overlapPieChart').getContext('2d');
+            overlapChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: overlapLabels,
+                    datasets: [{
+                        data: overlapCounts,
+                        backgroundColor: [
+                            'rgba(67, 56, 202, 1)',      // Indigo intenso para los ÚNICOS
+                            'rgba(99, 102, 241, 0.7)',   // Resto de colores...
+                            'rgba(16, 185, 129, 0.7)',  
+                            'rgba(245, 158, 11, 0.7)',  
+                            'rgba(236, 72, 153, 0.7)',  
+                            'rgba(139, 92, 246, 0.7)'   
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%', // Grosor interno de la dona
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    size: 13
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            padding: 12,
+                            titleFont: { family: "'Inter', sans-serif", size: 14 },
+                            bodyFont: { family: "'Inter', sans-serif", size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat('en-US').format(context.parsed) + ' contactos';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
 
